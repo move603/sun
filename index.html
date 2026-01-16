@@ -1,867 +1,1031 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>OMNI-VERSE: Ultra-Realistic Galactic Simulation</title>
-    <style>
-        :root {
-            --hud-color: #00f0ff;
-            --hud-bg: rgba(5, 10, 20, 0.85);
-            --hud-border: 1px solid rgba(0, 240, 255, 0.3);
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --font-mono: 'Courier New', Courier, monospace;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CY RESIZER PRO • Free Unlimited Image Resizer & Converter</title>
+<meta name="description" content="The world's most beautiful, fastest, and advanced online image resizer. 100% Client-side.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-        body { margin: 0; overflow: hidden; background: #000; font-family: var(--font-main); color: white; user-select: none; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+colors: {
+cy: {
+dark: '#050505',
+panel: '#0f1014',
+panelTrans: 'rgba(15, 16, 20, 0.7)',
+primary: '#00f2ea', // Cyan
+secondary: '#ff0055', // Neon Pink
+accent: '#7000ff', // Purple
+text: '#e0e0e0',
+muted: '#858b9b'
+}
+},
+fontFamily: {
+sans: ['Outfit', 'sans-serif'],
+mono: ['Space Grotesk', 'monospace'],
+},
+animation: {
+'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+'float': 'float 6s ease-in-out infinite',
+'glow': 'glow 2s ease-in-out infinite alternate',
+},
+keyframes: {
+float: {
+'0%, 100%': { transform: 'translateY(0)' },
+'50%': { transform: 'translateY(-10px)' },
+},
+glow: {
+'from': { boxShadow: '0 0 10px -5px #00f2ea' },
+'to': { boxShadow: '0 0 20px 5px #00f2ea' },
+}
+}
+}
+}
+}
+</script>
 
-        /* Loading Screen */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 1.5s ease-out;
-        }
-        .loader-text { font-size: 24px; letter-spacing: 5px; color: var(--hud-color); text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px var(--hud-color); }
-        .loader-bar-bg { width: 300px; height: 2px; background: #111; position: relative; }
-        .loader-bar-fill { height: 100%; background: var(--hud-color); width: 0%; box-shadow: 0 0 15px var(--hud-color); transition: width 0.2s; }
-        .loader-fact { margin-top: 15px; font-family: var(--font-mono); font-size: 12px; color: #666; max-width: 400px; text-align: center; }
+<style>
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0f1014; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #00f2ea; }
 
-        /* UI Overlay */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        
-        /* HUD Components */
-        .hud-panel {
-            position: absolute; pointer-events: auto;
-            background: var(--hud-bg); backdrop-filter: blur(10px);
-            border: var(--hud-border); padding: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            transition: transform 0.3s, opacity 0.3s;
-        }
+/* Glassmorphism Utilities */
+.glass {
+background: rgba(15, 16, 20, 0.65);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+border: 1px solid rgba(255, 255, 255, 0.08);
+box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
 
-        /* Top Bar */
-        #top-bar { top: 20px; left: 20px; display: flex; align-items: center; gap: 20px; }
-        h1 { margin: 0; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; color: var(--hud-color); }
-        .stats { font-family: var(--font-mono); font-size: 12px; color: #aaa; line-height: 1.5; }
-        .stat-val { color: white; }
+.glass-high {
+background: rgba(255, 255, 255, 0.03);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-        /* Search */
-        #search-container { position: absolute; top: 20px; right: 20px; width: 300px; display: flex; gap: 10px; }
-        #search-input {
-            flex: 1; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white;
-            padding: 8px 12px; font-family: var(--font-mono); outline: none;
-        }
-        #search-input:focus { border-color: var(--hud-color); }
-        #search-results {
-            position: absolute; top: 100%; right: 0; width: 100%; max-height: 300px;
-            background: rgba(0,5,10,0.95); border: 1px solid #333; overflow-y: auto; display: none;
-        }
-        .result-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #111; font-size: 13px; }
-        .result-item:hover { background: rgba(0, 240, 255, 0.1); color: var(--hud-color); }
-        .result-type { font-size: 10px; color: #666; display: block; }
+/* Range Slider Styling */
+input[type=range] {
+-webkit-appearance: none;
+width: 100%;
+background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance: none;
+height: 16px;
+width: 16px;
+border-radius: 50%;
+background: #00f2ea;
+cursor: pointer;
+margin-top: -6px;
+box-shadow: 0 0 10px #00f2ea;
+transition: transform 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+input[type=range]::-webkit-slider-runnable-track {
+width: 100%;
+height: 4px;
+cursor: pointer;
+background: #333;
+border-radius: 2px;
+}
 
-        /* Bottom Controls */
-        #controls-bar {
-            bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; gap: 15px; align-items: center; width: 600px;
-        }
-        .time-control { width: 100%; display: flex; align-items: center; gap: 15px; }
-        .btn {
-            background: transparent; border: 1px solid var(--hud-color); color: var(--hud-color);
-            padding: 8px 16px; cursor: pointer; font-family: var(--font-mono); font-size: 12px;
-            text-transform: uppercase; transition: all 0.2s;
-        }
-        .btn:hover { background: var(--hud-color); color: #000; box-shadow: 0 0 15px var(--hud-color); }
-        
-        input[type=range] {
-            flex: 1; -webkit-appearance: none; background: transparent;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 2px; background: #333;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 14px; width: 14px; background: var(--hud-color);
-            margin-top: -6px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px var(--hud-color);
-        }
+/* Checkbox Custom */
+.cy-checkbox {
+appearance: none;
+background-color: #1a1c23;
+margin: 0;
+font: inherit;
+color: currentColor;
+width: 1.15em;
+height: 1.15em;
+border: 1px solid #333;
+border-radius: 0.15em;
+display: grid;
+place-content: center;
+cursor: pointer;
+transition: all 0.2s;
+}
+.cy-checkbox::before {
+content: "";
+width: 0.65em;
+height: 0.65em;
+transform: scale(0);
+transition: 120ms transform ease-in-out;
+box-shadow: inset 1em 1em #00f2ea;
+transform-origin: center;
+clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+.cy-checkbox:checked { border-color: #00f2ea; }
+.cy-checkbox:checked::before { transform: scale(1); }
 
-        /* Info Panel */
-        #info-panel {
-            top: 80px; right: 20px; width: 320px;
-            transform: translateX(120%); opacity: 0;
-        }
-        #info-panel.visible { transform: translateX(0); opacity: 1; }
-        #info-title { font-size: 20px; color: white; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        #info-subtitle { font-size: 12px; color: var(--hud-color); text-transform: uppercase; margin-bottom: 15px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 15px; }
-        .info-label { color: #666; }
-        .info-data { text-align: right; color: #ddd; font-family: var(--font-mono); }
-        #info-desc { font-size: 13px; line-height: 1.6; color: #aaa; margin-bottom: 15px; }
-        #wiki-link { display: inline-block; color: var(--hud-color); text-decoration: none; font-size: 12px; border-bottom: 1px dotted var(--hud-color); }
+/* Neon Text */
+.text-neon {
+text-shadow: 0 0 10px rgba(0, 242, 234, 0.5), 0 0 20px rgba(0, 242, 234, 0.3);
+}
 
-        /* Labels */
-        .planet-label {
-            position: absolute; color: rgba(255,255,255,0.8); font-size: 11px; font-family: var(--font-mono);
-            background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 2px;
-            pointer-events: none; transform: translate(-50%, -150%); white-space: nowrap;
-            transition: opacity 0.2s; text-shadow: 0 0 2px black;
-        }
-        .planet-label::before {
-            content: ''; position: absolute; left: 50%; bottom: -5px; width: 1px; height: 5px;
-            background: rgba(255,255,255,0.5); transform: translateX(-50%);
-        }
+/* Background Animation */
+#bg-canvas {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+z-index: -1;
+background: radial-gradient(circle at center, #1a1c29 0%, #000000 100%);
+}
 
-        /* Cinematic Bars */
-        .cinematic-bar {
-            position: fixed; left: 0; width: 100%; height: 0; background: black;
-            transition: height 0.8s ease-in-out; pointer-events: none; z-index: 100;
-        }
-        .cinematic-top { top: 0; }
-        .cinematic-bottom { bottom: 0; }
-        body.cinematic .cinematic-top, body.cinematic .cinematic-bottom { height: 60px; }
-    </style>
-    <!-- Import Maps -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
-            }
-        }
-    </script>
+/* Loader */
+.loader {
+border: 3px solid rgba(255,255,255,0.1);
+border-left-color: #00f2ea;
+border-radius: 50%;
+width: 24px;
+height: 24px;
+animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Hide number input arrows */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+-webkit-appearance: none; 
+margin: 0; 
+}
+</style>
 </head>
-<body>
+<body class="bg-cy-dark text-cy-text antialiased overflow-x-hidden selection:bg-cy-primary selection:text-black">
 
-    <!-- Cinematic Bars -->
-    <div class="cinematic-bar cinematic-top"></div>
-    <div class="cinematic-bar cinematic-bottom"></div>
+<!-- Dynamic Background -->
+<canvas id="bg-canvas"></canvas>
 
-    <!-- Loading Screen -->
-    <div id="loader">
-        <div class="loader-text">Initializing Simulation</div>
-        <div class="loader-bar-bg"><div class="loader-bar-fill" id="bar"></div></div>
-        <div class="loader-fact" id="fact">Loading high-resolution planetary textures...</div>
-    </div>
+<!-- Main Container -->
+<div class="relative min-h-screen flex flex-col items-center justify-center p-4 lg:p-8">
 
-    <!-- 3D Canvas -->
-    <canvas id="canvas"></canvas>
-
-    <!-- UI -->
-    <div id="ui-layer">
-        <!-- Top Left: Status -->
-        <div class="hud-panel" id="top-bar">
+    <!-- Header -->
+    <header class="w-full max-w-7xl flex justify-between items-center mb-8 animate-float">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cy-primary to-cy-accent flex items-center justify-center shadow-[0_0_15px_rgba(0,242,234,0.4)]">
+                <i class="fa-solid fa-layer-group text-black text-xl"></i>
+            </div>
             <div>
-                <h1>OMNI-VERSE</h1>
-                <div style="font-size: 10px; opacity: 0.7;">JPL HORIZONS DATA // GAIA DR3</div>
-            </div>
-            <div class="stats">
-                <div>DATE: <span class="stat-val" id="date-display">2023-11-15</span></div>
-                <div>ZOOM: <span class="stat-val" id="zoom-display">1.00 AU</span></div>
-                <div>OBJECTS: <span class="stat-val">~520,000</span></div>
-                <div>FPS: <span class="stat-val" id="fps-display">60</span></div>
+                <h1 class="text-2xl font-bold font-mono tracking-tighter text-white">CY <span class="text-cy-primary text-neon">RESIZER</span> PRO</h1>
+                <p class="text-xs text-cy-muted tracking-widest uppercase">Ultimate Image Engine</p>
             </div>
         </div>
-
-        <!-- Top Right: Search -->
-        <div id="search-container" class="hud-panel" style="padding: 5px;">
-            <input type="text" id="search-input" placeholder="Search (e.g. Earth, TRAPPIST-1)...">
-            <div id="search-results"></div>
-        </div>
-
-        <!-- Right: Info Panel -->
-        <div class="hud-panel" id="info-panel">
-            <div id="info-title">Earth</div>
-            <div id="info-subtitle">Terrestrial Planet</div>
-            <div class="info-grid" id="info-grid">
-                <!-- Injected via JS -->
+        <div class="hidden md:flex gap-4">
+            <div class="glass px-4 py-2 rounded-full text-xs font-mono text-cy-primary border-cy-primary/30">
+                <i class="fa-solid fa-bolt mr-2"></i>100% Client-Side
             </div>
-            <div id="info-desc">The third planet from the Sun and the only astronomical object known to harbor life.</div>
-            <a href="#" target="_blank" id="wiki-link">Read More on Wikipedia</a>
-        </div>
-
-        <!-- Bottom: Time & Speed -->
-        <div class="hud-panel" id="controls-bar">
-            <div class="time-control">
-                <button class="btn" id="btn-pause">II</button>
-                <button class="btn" id="btn-play">▶</button>
-                <button class="btn" id="btn-fast">>>></button>
-                <input type="range" id="time-slider" min="0" max="6" step="0.01" value="0">
-                <span id="speed-text" style="font-family: var(--font-mono); font-size: 11px; width: 60px; text-align: right;">1x</span>
+            <div class="glass px-4 py-2 rounded-full text-xs font-mono text-cy-secondary border-cy-secondary/30">
+                <i class="fa-solid fa-shield-halved mr-2"></i>Privacy First
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn" id="btn-reset">Reset View</button>
-                <button class="btn" id="btn-toggle-mode">Real Scale: OFF</button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Panel: Upload & List -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="glass rounded-3xl p-8 border-2 border-dashed border-gray-700 hover:border-cy-primary transition-all duration-300 group relative overflow-hidden cursor-pointer">
+                <input type="file" id="file-input" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                <div class="absolute inset-0 bg-cy-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+                
+                <div class="relative z-10 flex flex-col items-center justify-center text-center py-10">
+                    <div class="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-cy-primary group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Drop images here</h2>
+                    <p class="text-cy-muted mb-6">or click to browse • Supports JPG, PNG, WEBP, AVIF</p>
+                    <button class="px-6 py-2 rounded-full bg-gradient-to-r from-cy-primary to-cy-accent text-black font-bold text-sm hover:shadow-[0_0_20px_rgba(0,242,234,0.4)] transition-shadow">
+                        SELECT FILES
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image List -->
+            <div class="glass rounded-3xl p-6 flex-1 min-h-[400px] flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-mono text-lg font-bold text-white"><i class="fa-solid fa-images mr-2 text-cy-secondary"></i>Queue <span id="queue-count" class="text-cy-muted text-sm ml-2">(0)</span></h3>
+                    <button onclick="clearAll()" class="text-xs text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider font-bold">Clear All</button>
+                </div>
+                
+                <div id="image-list" class="flex-1 overflow-y-auto space-y-3 pr-2 max-h-[500px]">
+                    <!-- Empty State -->
+                    <div id="empty-state" class="h-full flex flex-col items-center justify-center text-cy-muted opacity-50">
+                        <i class="fa-regular fa-folder-open text-4xl mb-3"></i>
+                        <p class="text-sm">No images selected yet</p>
+                    </div>
+                    <!-- Items injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Controls -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div class="glass rounded-3xl p-6 h-full flex flex-col relative overflow-hidden">
+                <!-- Decorative Glow -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-cy-accent/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+                <div class="flex justify-between items-center mb-6 relative z-10">
+                    <h3 class="font-mono text-lg font-bold text-white">Configuration</h3>
+                    <button onclick="applyToAll()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded-md transition-colors border border-gray-700">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Apply to All
+                    </button>
+                </div>
+
+                <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar relative z-10 flex-1">
+                    
+                    <!-- Resize Mode -->
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-cy-muted uppercase tracking-wider">Resize Mode</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="mode-btn active bg-cy-primary/20 border-cy-primary text-cy-primary py-2 rounded-lg text-sm font-medium transition-all" data-mode="percentage">Percentage</button>
+                            <button class="mode-btn bg-gray-800/50 border-transparent text-gray-400 hover:text-white py-2 rounded-lg text-sm font-medium transition-all" data-mode="dimensions">Dimensions</button>
+                        </div>
+                    </div>
+
+                    <!-- Inputs -->
+                    <div class="space-y-4">
+                        <!-- Percentage Controls -->
+                        <div id="ctrl-percentage" class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Scale</span>
+                                <span id="scale-val" class="text-cy-primary font-mono">100%</span>
+                            </div>
+                            <input type="range" id="scale-input" min="1" max="500" value="100" class="w-full">
+                            <div class="flex gap-2">
+                                <button onclick="setPresetScale(50)" class="flex-1 py-1 bg-gray-800 rounded text-xs text-gray-400 hover:bg-gray-700">50%</button>
+                                <button onclick="setPresetScale(75)" class="flex-1 py-1 bg-gray-800 rounded text-xs text-gray-400 hover:bg-gray-700">75%</button>
+                                <button onclick="setPresetScale(100)" class="flex-1 py-1 bg-gray-800 rounded text-xs text-gray-400 hover:bg-gray-700">100%</button>
+                                <button onclick="setPresetScale(200)" class="flex-1 py-1 bg-gray-800 rounded text-xs text-gray-400 hover:bg-gray-700">200%</button>
+                            </div>
+                        </div>
+
+                        <!-- Dimension Controls -->
+                        <div id="ctrl-dimensions" class="hidden space-y-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="text-xs text-gray-500">Width (px)</label>
+                                    <input type="number" id="width-input" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-cy-primary focus:outline-none transition-colors font-mono" placeholder="Auto">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs text-gray-500">Height (px)</label>
+                                    <input type="number" id="height-input" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-cy-primary focus:outline-none transition-colors font-mono" placeholder="Auto">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="lock-ratio" class="cy-checkbox" checked>
+                                <label for="lock-ratio" class="text-sm text-gray-300 cursor-pointer select-none">Lock Aspect Ratio</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Presets -->
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-cy-muted uppercase tracking-wider">Quick Presets</label>
+                        <select id="preset-select" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-cy-primary focus:outline-none appearance-none cursor-pointer">
+                            <option value="">Custom Size</option>
+                            <optgroup label="Social Media">
+                                <option value="1080x1080">Instagram Square (1080x1080)</option>
+                                <option value="1080x1920">Instagram Portrait (1080x1920)</option>
+                                <option value="1200x630">Facebook Post (1200x630)</option>
+                                <option value="1600x900">Twitter Header (1600x900)</option>
+                                <option value="1500x500">YouTube Banner (1500x500)</option>
+                            </optgroup>
+                            <optgroup label="Standard">
+                                <option value="1920x1080">Full HD (1920x1080)</option>
+                                <option value="3840x2160">4K Ultra HD (3840x2160)</option>
+                                <option value="128x128">Avatar Icon (128x128)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Format & Quality -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-cy-muted uppercase tracking-wider">Format</label>
+                            <select id="format-select" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-cy-primary focus:outline-none appearance-none cursor-pointer">
+                                <option value="original">Original</option>
+                                <option value="image/jpeg">JPEG</option>
+                                <option value="image/png">PNG</option>
+                                <option value="image/webp">WebP (Modern)</option>
+                                <option value="image/avif">AVIF (Ultra)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <label class="text-xs font-bold text-cy-muted uppercase tracking-wider">Quality</label>
+                                <span id="quality-val" class="text-xs text-cy-primary font-mono">85%</span>
+                            </div>
+                            <input type="range" id="quality-input" min="1" max="100" value="85" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="space-y-3 pt-2 border-t border-gray-800">
+                        <label class="text-xs font-bold text-cy-muted uppercase tracking-wider">Filters & Adjustments</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="toggleFilter('grayscale')" class="filter-btn p-2 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cy-primary text-gray-400 hover:text-white transition-all" title="Grayscale">
+                                <i class="fa-solid fa-droplet-slash"></i>
+                            </button>
+                            <button onclick="toggleFilter('sepia')" class="filter-btn p-2 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cy-primary text-gray-400 hover:text-white transition-all" title="Sepia">
+                                <i class="fa-solid fa-wheat-awn"></i>
+                            </button>
+                            <button onclick="toggleFilter('blur')" class="filter-btn p-2 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cy-primary text-gray-400 hover:text-white transition-all" title="Blur">
+                                <i class="fa-solid fa-water"></i>
+                            </button>
+                            <button onclick="toggleFilter('brightness')" class="filter-btn p-2 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cy-primary text-gray-400 hover:text-white transition-all" title="Brightness">
+                                <i class="fa-regular fa-sun"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="rotateImage(-90)" class="flex-1 py-2 bg-gray-800 rounded-lg text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> -90°
+                            </button>
+                            <button onclick="rotateImage(90)" class="flex-1 py-2 bg-gray-800 rounded-lg text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> +90°
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Extras -->
+                    <div class="space-y-3 pt-2 border-t border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="remove-exif" class="cy-checkbox" checked>
+                                <label for="remove-exif" class="text-sm text-gray-300 cursor-pointer select-none">Remove EXIF Data</label>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="smart-crop" class="cy-checkbox">
+                                <label for="smart-crop" class="text-sm text-gray-300 cursor-pointer select-none">Smart Fit (Fill Box)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 pt-6 border-t border-gray-800 space-y-3 relative z-10">
+                    <button id="process-btn" onclick="processImages()" class="w-full py-4 rounded-xl bg-gradient-to-r from-cy-primary to-cy-accent text-black font-bold text-lg hover:shadow-[0_0_30px_rgba(0,242,234,0.4)] transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-rocket"></i> PROCESS IMAGES
+                    </button>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="download-all-btn" onclick="downloadZip()" disabled class="py-3 rounded-xl bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors border border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-zipper"></i> Download ZIP
+                        </button>
+                        <button id="optimize-btn" onclick="optimizeForWeb()" class="py-3 rounded-xl bg-gray-800 text-cy-primary font-medium hover:bg-gray-700 transition-colors border border-gray-700 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-gauge-high"></i> Optimize < 100KB
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Preview Modal (Hidden by default) -->
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closePreview()"></div>
+        <div class="relative w-full max-w-5xl glass rounded-3xl p-2 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b border-gray-800">
+                <h3 class="text-white font-mono font-bold">Live Preview</h3>
+                <button onclick="closePreview()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-black/20 rounded-b-3xl">
+                <img id="preview-img" src="" alt="Preview" class="max-w-full max-h-[70vh] object-contain shadow-2xl">
+            </div>
+            <div class="p-4 border-t border-gray-800 flex justify-between items-center bg-gray-900/50 rounded-b-2xl">
+                <div class="text-sm text-gray-400 font-mono" id="preview-info">1920 x 1080 • 250KB</div>
+                <button id="preview-download-btn" class="px-6 py-2 bg-cy-primary text-black font-bold rounded-lg hover:bg-cyan-300 transition-colors">
+                    Download This
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Labels Container -->
-    <div id="labels"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 right-8 glass px-6 py-4 rounded-xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 border-l-4 border-cy-primary">
+        <i class="fa-solid fa-circle-check text-cy-primary"></i>
+        <div>
+            <h4 class="font-bold text-white text-sm" id="toast-title">Success</h4>
+            <p class="text-xs text-gray-400" id="toast-msg">Operation completed.</p>
+        </div>
+    </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+</div>
 
-        // --- CONFIGURATION ---
-        const CONFIG = {
-            au: 200, // Visual scale: 1 AU = 200 units
-            planetScale: 3.0, // Visual multiplier for planets (to make them visible)
-            sunScale: 20.0,
-            starCount: 500000,
-            galaxyRadius: 10000, // Visual units for galaxy sphere
-            lyScale: 63241 // 1 Light Year in AU
-        };
+<script>
+    // --- State Management ---
+    const state = {
+        files: [], // { id, originalFile, originalMeta, processedBlob, processedUrl, settings: {} }
+        settings: {
+            mode: 'percentage', // percentage | dimensions
+            scale: 100,
+            width: '',
+            height: '',
+            lockRatio: true,
+            format: 'original',
+            quality: 85,
+            removeExif: true,
+            smartCrop: false,
+            filters: {
+                grayscale: false,
+                sepia: false,
+                blur: false,
+                brightness: false
+            },
+            rotation: 0
+        },
+        isProcessing: false
+    };
 
-        const STATE = {
-            time: 0,
-            speed: 0,
-            paused: false,
-            focused: null,
-            cinematic: false,
-            realScale: false, // Toggle for massive distances
-            cameraTarget: new THREE.Vector3()
-        };
+    // --- DOM Elements ---
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const imageList = document.getElementById('image-list');
+    const emptyState = document.getElementById('empty-state');
+    const queueCount = document.getElementById('queue-count');
+    const processBtn = document.getElementById('process-btn');
+    const downloadAllBtn = document.getElementById('download-all-btn');
+    const previewModal = document.getElementById('preview-modal');
+    const previewImg = document.getElementById('preview-img');
+    const previewInfo = document.getElementById('preview-info');
 
-        // --- TEXTURE DATABASE (High Quality URLs) ---
-        const TEXTURES = {
-            sun: 'https://upload.wikimedia.org/wikipedia/commons/9/99/Map_of_the_full_sun.jpg',
-            mercury: 'https://upload.wikimedia.org/wikipedia/commons/3/30/Mercury_in_color_-_Prockter07_centered.jpg',
-            venus: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/Solar_System_Scope_Venus_surface_map.jpg',
-            earth: 'https://upload.wikimedia.org/wikipedia/commons/0/04/Solarsystemscope_texture_2k_earth_daymap.jpg',
-            earthClouds: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Solarsystemscope_texture_2k_earth_clouds.jpg/1024px-Solarsystemscope_texture_2k_earth_clouds.jpg',
-            earthNormal: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Solarsystemscope_texture_2k_earth_normal_map.png/1024px-Solarsystemscope_texture_2k_earth_normal_map.png',
-            moon: 'https://upload.wikimedia.org/wikipedia/commons/d/db/Moon_map_Mercator_projection_JPL.jpg',
-            mars: 'https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg',
-            jupiter: 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg',
-            saturn: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Saturn_%28planet%29_large.jpg',
-            saturnRing: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Saturn_ring.png/800px-Saturn_ring.png', // Alpha map needed
-            uranus: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg',
-            neptune: 'https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg',
-            pluto: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Pluto_in_True_Color_-_High_Res.jpg',
-            milkyway: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Hyades.jpg', // Placeholder, using procedural noise instead for performance
-            stars: 'https://threejs.org/examples/textures/sprites/disc.png'
-        };
+    // --- Event Listeners ---
+    
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-cy-primary', 'bg-cy-primary/10');
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-cy-primary', 'bg-cy-primary/10');
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-cy-primary', 'bg-cy-primary/10');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-        // --- CELESTIAL DATA (Simplified for Single File but Accurate Relative Data) ---
-        // Distances in AU, Radii relative to Earth, Periods in Earth Years
-        const BODIES = [
-            { id: 'sun', name: "Sun", type: "Star", r: 109, dist: 0, period: 1, color: 0xffaa00, texture: 'sun', desc: "The star at the center of our Solar System." },
-            { id: 'mercury', name: "Mercury", type: "Planet", r: 0.38, dist: 0.39, period: 0.24, texture: 'mercury', desc: "Smallest planet, closest to the Sun." },
-            { id: 'venus', name: "Venus", type: "Planet", r: 0.95, dist: 0.72, period: 0.61, texture: 'venus', desc: "Second planet, hottest in the solar system." },
-            { id: 'earth', name: "Earth", type: "Planet", r: 1.0, dist: 1.0, period: 1.0, texture: 'earth', hasClouds: true, desc: "Our home." },
-            { id: 'mars', name: "Mars", type: "Planet", r: 0.53, dist: 1.52, period: 1.88, texture: 'mars', desc: "The Red Planet." },
-            { id: 'jupiter', name: "Jupiter", type: "Gas Giant", r: 11.2, dist: 5.2, period: 11.86, texture: 'jupiter', desc: "Largest planet." },
-            { id: 'saturn', name: "Saturn", type: "Gas Giant", r: 9.45, dist: 9.5, period: 29.45, texture: 'saturn', hasRings: true, desc: "Famous for its ring system." },
-            { id: 'uranus', name: "Uranus", type: "Ice Giant", r: 4.0, dist: 19.2, period: 84, texture: 'uranus', desc: "Ice giant rotating on its side." },
-            { id: 'neptune', name: "Neptune", type: "Ice Giant", r: 3.88, dist: 30.1, period: 164, texture: 'neptune', desc: "Windiest planet." },
-            { id: 'pluto', name: "Pluto", type: "Dwarf Planet", r: 0.18, dist: 39.5, period: 248, texture: 'pluto', desc: "King of the Kuiper Belt." }
-        ];
-
-        const STARS_DB = [
-            { name: "Proxima Centauri", dist: 4.24, type: "Red Dwarf", color: "#ff3300" },
-            { name: "Alpha Centauri A", dist: 4.37, type: "G-Type", color: "#ffffee" },
-            { name: "Barnard's Star", dist: 5.96, type: "Red Dwarf", color: "#ff2200" },
-            { name: "Sirius A", dist: 8.6, type: "A-Type", color: "#aaccff" },
-            { name: "Betelgeuse", dist: 700, type: "Red Supergiant", color: "#ff4400", size: 100 },
-            { name: "TRAPPIST-1", dist: 40, type: "Red Dwarf", color: "#ff1111", hasPlanets: 7 },
-            { name: "Rigel", dist: 860, type: "Blue Supergiant", color: "#aaaaff", size: 80 },
-            { name: "Vega", dist: 25, type: "A-Type", color: "#ccddee" }
-        ];
-
-        // --- GLOBALS ---
-        let scene, camera, renderer, composer, controls;
-        let solarSystemGroup, starField, galaxyGroup;
-        let bodiesMap = {}; // Map meshes to data
-        let labels = {};
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
-        let clock = new THREE.Clock();
-        let textureLoader;
-
-        // --- SHADERS ---
-        const SUN_VERT = `
-            varying vec2 vUv;
-            varying vec3 vPosition;
-            uniform float time;
-            void main() {
-                vUv = uv;
-                vPosition = position;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-        const SUN_FRAG = `
-            uniform float time;
-            varying vec2 vUv;
-            varying vec3 vPosition;
-            // Simplex noise (simplified)
-            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-            vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-            vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-            float snoise(vec2 v) {
-                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                vec2 i  = floor(v + dot(v, C.yy) );
-                vec2 x0 = v -   i + dot(i, C.xx);
-                vec2 i1;
-                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                vec4 x12 = x0.xyxy + C.xxzz;
-                x12.xy -= i1;
-                i = mod289(i);
-                vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-                vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                m = m*m ;
-                m = m*m ;
-                vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                vec3 h = abs(x) - 0.5;
-                vec3 ox = floor(x + 0.5);
-                vec3 a0 = x - ox;
-                m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-                vec3 g;
-                g.x  = a0.x  * x0.x  + h.x  * x0.y;
-                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                return 130.0 * dot(m, g);
-            }
-
-            void main() {
-                float noise = snoise(vUv * 10.0 + time * 0.1);
-                float pulse = snoise(vUv * 2.0 - time * 0.2);
-                vec3 color = mix(vec3(1.0, 0.3, 0.0), vec3(1.0, 0.9, 0.4), noise + pulse + 0.5);
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        const ATMOS_VERT = `
-            varying vec3 vNormal;
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-        const ATMOS_FRAG = `
-            varying vec3 vNormal;
-            void main() {
-                float intensity = pow(0.65 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
-                gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 1.5;
-            }
-        `;
-
-        // --- INIT ---
-        function init() {
-            const canvas = document.getElementById('canvas');
-            
-            // Scene
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.00002);
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 100000);
-            camera.position.set(0, 200, 400);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
-
-            // Post Processing
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0;
-            bloomPass.strength = 1.2; // High bloom for sun
-            bloomPass.radius = 0.5;
-
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-
-            // Controls
-            controls = new OrbitControls(camera, canvas);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 10;
-            controls.maxDistance = 20000;
-            controls.target.set(0,0,0);
-
-            // Texture Loader
-            textureLoader = new THREE.TextureLoader();
-            textureLoader.crossOrigin = 'anonymous';
-
-            // Lighting
-            const sunLight = new THREE.PointLight(0xffffff, 2.5, 3000, 1);
-            sunLight.position.set(0, 0, 0);
-            scene.add(sunLight);
-            scene.add(new THREE.AmbientLight(0x404040, 0.05)); // Very faint ambient
-
-            // Build Scene
-            buildSolarSystem();
-            buildStarfield();
-            buildMilkyWay();
-            
-            // Events
-            window.addEventListener('resize', onResize);
-            canvas.addEventListener('pointerdown', onPointerDown);
-            document.getElementById('search-input').addEventListener('input', onSearch);
-            
-            // UI Hooks
-            bindUI();
-
-            // Start Loop
-            animate();
-        }
-
-        // --- SCENE GENERATION ---
-
-        function buildSolarSystem() {
-            solarSystemGroup = new THREE.Group();
-            scene.add(solarSystemGroup);
-
-            BODIES.forEach(data => {
-                // Geometry
-                const isSun = data.id === 'sun';
-                const visualR = isSun ? CONFIG.sunScale : Math.max(data.r * CONFIG.planetScale, 0.5);
-                
-                const geometry = new THREE.SphereGeometry(visualR, 64, 64);
-                let material;
-
-                if (isSun) {
-                    material = new THREE.ShaderMaterial({
-                        uniforms: { time: { value: 0 } },
-                        vertexShader: SUN_VERT,
-                        fragmentShader: SUN_FRAG
-                    });
-                } else {
-                    material = new THREE.MeshStandardMaterial({
-                        map: textureLoader.load(TEXTURES[data.texture]),
-                        roughness: 0.8,
-                        metalness: 0.1
-                    });
-                }
-
-                const mesh = new THREE.Mesh(geometry, material);
-                
-                // Orbit Logic Container
-                const pivot = new THREE.Object3D();
-                pivot.rotation.y = Math.random() * Math.PI * 2; // Random start
-                
-                // Position
-                const dist = isSun ? 0 : data.dist * CONFIG.au;
-                mesh.position.set(dist, 0, 0);
-
-                pivot.add(mesh);
-                solarSystemGroup.add(pivot);
-
-                // Add Extras
-                if (data.hasClouds) {
-                    const cloudGeo = new THREE.SphereGeometry(visualR * 1.02, 64, 64);
-                    const cloudMat = new THREE.MeshPhongMaterial({
-                        map: textureLoader.load(TEXTURES.earthClouds),
-                        transparent: true,
-                        opacity: 0.8,
-                        blending: THREE.AdditiveBlending,
-                        side: THREE.DoubleSide
-                    });
-                    const clouds = new THREE.Mesh(cloudGeo, cloudMat);
-                    mesh.add(clouds);
-                    mesh.userData.clouds = clouds;
-                }
-
-                if (data.id !== 'sun') {
-                    // Atmosphere Glow
-                    const atmoGeo = new THREE.SphereGeometry(visualR * 1.2, 64, 64);
-                    const atmoMat = new THREE.ShaderMaterial({
-                        vertexShader: ATMOS_VERT,
-                        fragmentShader: ATMOS_FRAG,
-                        blending: THREE.AdditiveBlending,
-                        side: THREE.BackSide,
-                        transparent: true
-                    });
-                    const atmo = new THREE.Mesh(atmoGeo, atmoMat);
-                    mesh.add(atmo);
-                    
-                    // Orbit Line
-                    const orbitCurve = new THREE.EllipseCurve(
-                        0, 0,            // ax, aY
-                        dist, dist,      // xRadius, yRadius
-                        0, 2 * Math.PI,  // aStartAngle, aEndAngle
-                        false,           // aClockwise
-                        0                // aRotation
-                    );
-                    const points = orbitCurve.getPoints(128);
-                    const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
-                    const orbitMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 });
-                    const orbit = new THREE.LineLoop(orbitGeo, orbitMat);
-                    orbit.rotation.x = Math.PI / 2;
-                    scene.add(orbit);
-                }
-
-                if (data.hasRings) {
-                    const ringGeo = new THREE.RingGeometry(visualR * 1.4, visualR * 2.5, 64);
-                    const ringMat = new THREE.MeshBasicMaterial({ 
-                        color: 0xaa8866, 
-                        side: THREE.DoubleSide, 
-                        transparent: true, 
-                        opacity: 0.6 
-                    });
-                    const ring = new THREE.Mesh(ringGeo, ringMat);
-                    ring.rotation.x = Math.PI / 2.2;
-                    mesh.add(ring);
-                }
-
-                // Store Reference
-                bodiesMap[data.id] = {
-                    mesh: mesh,
-                    pivot: pivot,
-                    data: data,
-                    speed: data.period > 0 ? (1 / data.period) : 0,
-                    dist: dist
-                };
-                
-                createLabel(data.name, mesh);
+    // Settings Inputs
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.remove('bg-cy-primary/20', 'border-cy-primary', 'text-cy-primary');
+                b.classList.add('bg-gray-800/50', 'border-transparent', 'text-gray-400');
             });
-        }
-
-        function buildStarfield() {
-            // Using BufferGeometry for 500k stars
-            const geometry = new THREE.BufferGeometry();
-            const positions = [];
-            const colors = [];
-            const sizes = [];
+            btn.classList.remove('bg-gray-800/50', 'border-transparent', 'text-gray-400');
+            btn.classList.add('bg-cy-primary/20', 'border-cy-primary', 'text-cy-primary');
             
-            const colorPalette = [
-                new THREE.Color('#ffffff'), // White
-                new THREE.Color('#aaddff'), // Blue
-                new THREE.Color('#ffddaa'), // Yellow
-                new THREE.Color('#ff6644')  // Red
-            ];
+            state.settings.mode = btn.dataset.mode;
+            document.getElementById('ctrl-percentage').classList.toggle('hidden', state.settings.mode !== 'percentage');
+            document.getElementById('ctrl-dimensions').classList.toggle('hidden', state.settings.mode !== 'dimensions');
+        });
+    });
 
-            for (let i = 0; i < CONFIG.starCount; i++) {
-                // Gaussian distribution for galactic disk
-                const r = Math.random() * CONFIG.galaxyRadius;
-                const theta = Math.random() * 2 * Math.PI;
-                const phi = (Math.random() - 0.5) * 0.5; // Flattened disk
+    document.getElementById('scale-input').addEventListener('input', (e) => {
+        state.settings.scale = parseInt(e.target.value);
+        document.getElementById('scale-val').innerText = state.settings.scale + '%';
+    });
 
-                // Convert to Cartesian
-                const x = r * Math.cos(theta);
-                const z = r * Math.sin(theta);
-                const y = r * phi + (Math.random() - 0.5) * 200; // Scatter height
-
-                positions.push(x, y, z);
-
-                // Color based on random spectral type
-                const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                colors.push(color.r, color.g, color.b);
-                
-                // Size variation
-                sizes.push(Math.random() * 2);
-            }
-
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
-
-            const material = new THREE.PointsMaterial({
-                size: 1.5,
-                vertexColors: true,
-                map: textureLoader.load(TEXTURES.stars),
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                transparent: true,
-                opacity: 0.8
-            });
-
-            starField = new THREE.Points(geometry, material);
-            scene.add(starField);
-
-            // Add Named Stars (Clickable Sprites)
-            STARS_DB.forEach(star => {
-                const x = (Math.random() - 0.5) * CONFIG.galaxyRadius * 0.5; // Randomize locally for demo
-                const y = (Math.random() - 0.5) * 1000;
-                const z = (Math.random() - 0.5) * CONFIG.galaxyRadius * 0.5;
-                
-                const spriteMat = new THREE.SpriteMaterial({ 
-                    map: textureLoader.load(TEXTURES.stars), 
-                    color: star.color,
-                    blending: THREE.AdditiveBlending
-                });
-                const sprite = new THREE.Sprite(spriteMat);
-                
-                // Scale based on star type
-                const scale = star.size ? star.size : (star.type.includes('Giant') ? 20 : 5);
-                sprite.scale.set(scale, scale, 1);
-                sprite.position.set(x, y, z);
-                sprite.userData = { isStar: true, name: star.name, desc: `Star type: ${star.type}`, dist: star.dist + " LY" };
-                
-                starField.add(sprite);
-                bodiesMap[star.name] = { mesh: sprite, data: { name: star.name, type: star.type }, isStatic: true };
-                createLabel(star.name, sprite);
-            });
-        }
-
-        function buildMilkyWay() {
-            // Volumetric background plane
-            const geometry = new THREE.SphereGeometry(CONFIG.galaxyRadius * 2, 32, 32);
-            const material = new THREE.MeshBasicMaterial({
-                side: THREE.BackSide,
-                color: 0x050510,
-                // In a real app, load a 32k Milky Way texture here
-            });
-            const bg = new THREE.Mesh(geometry, material);
-            scene.add(bg);
-            
-            // Add some Nebula clouds (Simple colored sprites)
-            const createNebula = (x,y,z, color, scale) => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 128; canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-                const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
-                grad.addColorStop(0, color);
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0,0,128,128);
-                
-                const tex = new THREE.CanvasTexture(canvas);
-                const mat = new THREE.SpriteMaterial({ map: tex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.2 });
-                const sprite = new THREE.Sprite(mat);
-                sprite.position.set(x,y,z);
-                sprite.scale.set(scale, scale, 1);
-                scene.add(sprite);
-            };
-
-            // Procedural placement
-            for(let i=0; i<20; i++) {
-                createNebula(
-                    (Math.random()-0.5)*5000, (Math.random()-0.5)*500, (Math.random()-0.5)*5000,
-                    `hsl(${Math.random()*60 + 200}, 80%, 50%)`, 
-                    1000 + Math.random()*2000
-                );
+    document.getElementById('width-input').addEventListener('input', (e) => {
+        state.settings.width = e.target.value;
+        if(state.settings.lockRatio && state.settings.width) {
+            // Calculate height based on first image aspect ratio
+            if(state.files.length > 0) {
+                const ratio = state.files[0].originalMeta.height / state.files[0].originalMeta.width;
+                state.settings.height = Math.round(state.settings.width * ratio);
+                document.getElementById('height-input').value = state.settings.height;
             }
         }
+    });
 
-        function createLabel(text, obj) {
-            const div = document.createElement('div');
-            div.className = 'planet-label';
-            div.textContent = text;
-            document.getElementById('labels').appendChild(div);
-            labels[text] = { div: div, obj: obj };
-        }
-
-        // --- INTERACTION ---
-        function onPointerDown(e) {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            if (intersects.length > 0) {
-                // Find first object with data
-                let obj = intersects[0].object;
-                while(obj.parent && !obj.userData.name && !obj.userData.isStar) {
-                    obj = obj.parent;
-                }
-                
-                if (obj.userData.name || obj.userData.isStar) {
-                    const name = obj.userData.name || bodiesMap.findKey(b => b.mesh === obj);
-                    if (name && bodiesMap[name]) {
-                        focusObject(name);
-                    } else if (obj.userData.name) {
-                        focusObject(obj.userData.name); // For stars added separately
-                    }
-                }
+    document.getElementById('height-input').addEventListener('input', (e) => {
+        state.settings.height = e.target.value;
+        if(state.settings.lockRatio && state.settings.height) {
+            if(state.files.length > 0) {
+                const ratio = state.files[0].originalMeta.width / state.files[0].originalMeta.height;
+                state.settings.width = Math.round(state.settings.height * ratio);
+                document.getElementById('width-input').value = state.settings.width;
             }
         }
+    });
 
-        function focusObject(id) {
-            const body = bodiesMap[id];
-            if(!body) return;
+    document.getElementById('quality-input').addEventListener('input', (e) => {
+        state.settings.quality = parseInt(e.target.value);
+        document.getElementById('quality-val').innerText = state.settings.quality + '%';
+    });
 
-            STATE.focused = id;
-            
-            // UI Update
-            document.getElementById('info-panel').classList.add('visible');
-            document.getElementById('info-title').innerText = body.data.name || id;
-            document.getElementById('info-subtitle').innerText = body.data.type || "Celestial Body";
-            document.getElementById('info-desc').innerText = body.data.desc || "";
-            
-            const grid = document.getElementById('info-grid');
-            grid.innerHTML = '';
-            if(body.data.dist) addStat(grid, "Distance", body.data.dist + (body.isStatic ? " LY" : " AU"));
-            if(body.data.r) addStat(grid, "Radius", body.data.r + " Earths");
-            
-            // Cinematic Camera Move
-            document.body.classList.add('cinematic');
-            
-            // Tweening simulation
-            const targetPos = new THREE.Vector3();
-            body.mesh.getWorldPosition(targetPos);
-            const offset = targetPos.clone().normalize().multiplyScalar(body.data.dist ? body.data.dist * 0.5 + 50 : 200);
-            const endPos = targetPos.clone().add(offset);
-            
-            let alpha = 0;
-            const startPos = camera.position.clone();
-            const startTarget = controls.target.clone();
+    document.getElementById('preset-select').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if(!val) return;
+        const [w, h] = val.split('x');
+        state.settings.mode = 'dimensions';
+        // Trigger UI update for mode
+        document.querySelector('[data-mode="dimensions"]').click();
+        
+        state.settings.width = w;
+        state.settings.height = h;
+        document.getElementById('width-input').value = w;
+        document.getElementById('height-input').value = h;
+    });
 
-            function tween() {
-                alpha += 0.02;
-                if(alpha > 1) {
-                    document.body.classList.remove('cinematic');
-                    controls.target.copy(targetPos);
-                    return;
-                }
-                camera.position.lerpVectors(startPos, endPos, alpha);
-                controls.target.lerpVectors(startTarget, targetPos, alpha);
-                controls.update();
-                requestAnimationFrame(tween);
-            }
-            tween();
-        }
+    document.getElementById('format-select').addEventListener('change', (e) => {
+        state.settings.format = e.target.value;
+    });
 
-        function addStat(parent, label, val) {
-            parent.innerHTML += `<div class="info-label">${label}</div><div class="info-data">${val}</div>`;
-        }
+    document.getElementById('remove-exif').addEventListener('change', (e) => {
+        state.settings.removeExif = e.target.checked;
+    });
 
-        function onSearch(e) {
-            const val = e.target.value.toLowerCase();
-            const res = document.getElementById('search-results');
-            res.innerHTML = '';
-            if(val.length < 2) { res.style.display = 'none'; return; }
+    document.getElementById('smart-crop').addEventListener('change', (e) => {
+        state.settings.smartCrop = e.target.checked;
+    });
+
+    // --- Core Logic ---
+
+    function handleFiles(fileList) {
+        const newFiles = Array.from(fileList).filter(file => file.type.startsWith('image/'));
+        
+        if(newFiles.length === 0) return;
+
+        let loadedCount = 0;
+
+        newFiles.forEach(file => {
+            const id = 'img_' + Date.now() + Math.random().toString(36).substr(2, 9);
+            const reader = new FileReader();
             
-            const matches = Object.keys(bodiesMap).filter(k => k.toLowerCase().includes(val));
-            if(matches.length > 0) {
-                res.style.display = 'block';
-                matches.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = 'result-item';
-                    div.innerHTML = `<span>${bodiesMap[m].data.name}</span><span class="result-type">${bodiesMap[m].data.type}</span>`;
-                    div.onclick = () => {
-                        focusObject(m);
-                        res.style.display = 'none';
-                        document.getElementById('search-input').value = '';
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const fileObj = {
+                        id,
+                        originalFile: file,
+                        originalMeta: { width: img.width, height: img.height, size: file.size },
+                        processedBlob: null,
+                        processedUrl: null,
+                        previewUrl: e.target.result
                     };
-                    res.appendChild(div);
-                });
-            } else {
-                res.style.display = 'none';
+                    state.files.push(fileObj);
+                    addFileToUI(fileObj);
+                    loadedCount++;
+                    if(loadedCount === newFiles.length) {
+                        updateUIState();
+                        showToast('Added', `${newFiles.length} images added to queue.`);
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function addFileToUI(fileObj) {
+        emptyState.classList.add('hidden');
+        
+        const div = document.createElement('div');
+        div.className = 'group flex items-center gap-4 bg-gray-800/30 p-3 rounded-xl border border-gray-800 hover:border-gray-600 transition-all';
+        div.id = `item-${fileObj.id}`;
+        
+        const sizeStr = formatBytes(fileObj.originalMeta.size);
+        const dimStr = `${fileObj.originalMeta.width}x${fileObj.originalMeta.height}`;
+
+        div.innerHTML = `
+            <div class="w-16 h-16 rounded-lg bg-gray-900 overflow-hidden relative">
+                <img src="${fileObj.previewUrl}" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1 min-w-0">
+                <h4 class="text-white font-medium truncate text-sm">${fileObj.originalFile.name}</h4>
+                <div class="flex gap-3 text-xs text-gray-500 font-mono mt-1">
+                    <span>${dimStr}</span>
+                    <span>${sizeStr}</span>
+                </div>
+                <div class="status-area mt-2 text-xs font-mono text-cy-primary hidden">
+                    <span class="loader inline-block w-3 h-3 mr-1 border-2"></span> Processing...
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="previewSingle('${fileObj.id}')" class="w-8 h-8 rounded-full bg-gray-700 text-gray-300 hover:text-white hover:bg-cy-primary hover:text-black transition-all flex items-center justify-center" title="Preview">
+                    <i class="fa-regular fa-eye"></i>
+                </button>
+                <button onclick="removeFile('${fileObj.id}')" class="w-8 h-8 rounded-full bg-gray-700 text-gray-300 hover:text-white hover:bg-red-500 transition-all flex items-center justify-center" title="Remove">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `;
+        imageList.appendChild(div);
+    }
+
+    function removeFile(id) {
+        state.files = state.files.filter(f => f.id !== id);
+        const el = document.getElementById(`item-${id}`);
+        if(el) el.remove();
+        if(state.files.length === 0) emptyState.classList.remove('hidden');
+        updateUIState();
+    }
+
+    function clearAll() {
+        state.files = [];
+        imageList.innerHTML = '';
+        imageList.appendChild(emptyState);
+        emptyState.classList.remove('hidden');
+        updateUIState();
+    }
+
+    function updateUIState() {
+        queueCount.innerText = `(${state.files.length})`;
+        processBtn.disabled = state.files.length === 0 || state.isProcessing;
+        downloadAllBtn.disabled = state.files.length === 0 || state.files.every(f => !f.processedBlob);
+    }
+
+    // --- Image Processing Engine ---
+
+    async function processImages() {
+        if(state.files.length === 0) return;
+        
+        state.isProcessing = true;
+        updateUIState();
+        processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> PROCESSING...';
+
+        const promises = state.files.map(async (fileObj) => {
+            updateItemStatus(fileObj.id, true);
+            try {
+                const result = await processSingleImage(fileObj);
+                fileObj.processedBlob = result.blob;
+                fileObj.processedMeta = result.meta;
+                fileObj.processedUrl = URL.createObjectURL(result.blob);
+                updateItemSuccess(fileObj.id);
+            } catch (err) {
+                console.error(err);
+                updateItemError(fileObj.id);
             }
-        }
+        });
 
-        function bindUI() {
-            document.getElementById('btn-pause').onclick = () => { STATE.paused = true; STATE.speed = 0; };
-            document.getElementById('btn-play').onclick = () => { STATE.paused = false; document.getElementById('time-slider').value = 1; STATE.speed = 1; };
-            document.getElementById('btn-fast').onclick = () => { STATE.paused = false; document.getElementById('time-slider').value = 6; STATE.speed = 100000; };
-            
-            const slider = document.getElementById('time-slider');
-            slider.oninput = () => {
-                const v = parseFloat(slider.value);
-                STATE.speed = Math.pow(10, v);
-                document.getElementById('speed-text').innerText = STATE.speed < 10 ? STATE.speed.toFixed(1)+'x' : (STATE.speed/10000).toFixed(1)+'yrs/s';
-            };
+        await Promise.all(promises);
 
-            document.getElementById('btn-reset').onclick = () => {
-                controls.reset();
-                STATE.focused = null;
-                document.getElementById('info-panel').classList.remove('visible');
-            };
-        }
+        state.isProcessing = false;
+        processBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> PROCESS IMAGES';
+        updateUIState();
+        showToast('Complete', 'All images processed successfully.');
+    }
 
-        // --- ANIMATION LOOP ---
-        function animate() {
-            requestAnimationFrame(animate);
+    async function processSingleImage(fileObj) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
 
-            const delta = clock.getDelta();
-            
-            // Update Time
-            if (!STATE.paused) {
-                STATE.time += STATE.speed * delta * 0.1;
-                
-                // Update Planets
-                Object.values(bodiesMap).forEach(body => {
-                    if (body.mesh && body.pivot) {
-                        // Orbit
-                        body.pivot.rotation.y = body.speed * STATE.time;
+                    // 1. Calculate Dimensions
+                    let targetW = img.width;
+                    let targetH = img.height;
+
+                    if (state.settings.mode === 'percentage') {
+                        const ratio = state.settings.scale / 100;
+                        targetW = Math.round(img.width * ratio);
+                        targetH = Math.round(img.height * ratio);
+                    } else {
+                        if (state.settings.width) targetW = parseInt(state.settings.width);
+                        if (state.settings.height) targetH = parseInt(state.settings.height);
                         
-                        // Self Rotation
-                        body.mesh.rotation.y += delta * 0.5;
-                        
-                        // Clouds
-                        if(body.mesh.userData.clouds) {
-                            body.mesh.userData.clouds.rotation.y += delta * 0.05;
+                        // If only one is provided, calculate the other based on aspect ratio
+                        if (state.settings.width && !state.settings.height) {
+                            targetH = Math.round(targetW / (img.width / img.height));
+                        } else if (!state.settings.width && state.settings.height) {
+                            targetW = Math.round(targetH / (img.height / img.width));
                         }
                     }
-                });
 
-                // Starfield rotation
-                if(starField) starField.rotation.y += 0.00005;
+                    // 2. Rotation (90deg steps)
+                    if (state.settings.rotation !== 0) {
+                        if (Math.abs(state.settings.rotation) === 90 || Math.abs(state.settings.rotation) === 270) {
+                            // Swap width/height for 90/270 rotation
+                            [targetW, targetH] = [targetH, targetW];
+                        }
+                    }
+
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+
+                    // 3. Filters & Transformations
+                    ctx.save();
+                    
+                    // Rotation logic
+                    ctx.translate(targetW / 2, targetH / 2);
+                    ctx.rotate(state.settings.rotation * Math.PI / 180);
+                    
+                    // Smart Crop (Center Crop) logic
+                    let sx = 0, sy = 0, sWidth = img.width, sHeight = img.height;
+                    let dx = -targetW / 2, dy = -targetH / 2, dWidth = targetW, dHeight = targetH;
+
+                    if (state.settings.smartCrop) {
+                        const sourceRatio = img.width / img.height;
+                        const targetRatio = targetW / targetH;
+
+                        if (sourceRatio > targetRatio) {
+                            // Source is wider than target: crop sides
+                            sWidth = img.height * targetRatio;
+                            sx = (img.width - sWidth) / 2;
+                        } else {
+                            // Source is taller than target: crop top/bottom
+                            sHeight = img.width / targetRatio;
+                            sy = (img.height - sHeight) / 2;
+                        }
+                    }
+
+                    // Apply Filters
+                    let filterString = '';
+                    if(state.settings.filters.grayscale) filterString += 'grayscale(100%) ';
+                    if(state.settings.filters.sepia) filterString += 'sepia(100%) ';
+                    if(state.settings.filters.blur) filterString += 'blur(2px) ';
+                    if(state.settings.filters.brightness) filterString += 'brightness(120%) ';
+                    ctx.filter = filterString.trim();
+
+                    ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+                    ctx.restore();
+
+                    // 4. Output Format & Quality
+                    let outputType = fileObj.originalFile.type;
+                    if (state.settings.format !== 'original') {
+                        outputType = state.settings.format;
+                    }
+
+                    // Quality only applies to lossy formats
+                    let quality = state.settings.quality / 100;
+                    if(outputType === 'image/png' || outputType === 'image/bmp' || outputType === 'image/gif') {
+                        quality = undefined;
+                    }
+
+                    canvas.toBlob((blob) => {
+                        if(!blob) {
+                            reject(new Error('Canvas to Blob failed'));
+                            return;
+                        }
+                        resolve({
+                            blob,
+                            meta: { width: targetW, height: targetH, size: blob.size }
+                        });
+                    }, outputType, quality);
+
+                } catch (e) {
+                    reject(e);
+                }
+            };
+            img.onerror = reject;
+            img.src = fileObj.previewUrl;
+        });
+    }
+
+    // --- Helper Functions ---
+
+    function updateItemStatus(id, active) {
+        const el = document.getElementById(`item-${id}`);
+        if(!el) return;
+        const statusArea = el.querySelector('.status-area');
+        if(active) statusArea.classList.remove('hidden');
+    }
+
+    function updateItemSuccess(id) {
+        const el = document.getElementById(`item-${id}`);
+        if(!el) return;
+        const statusArea = el.querySelector('.status-area');
+        statusArea.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> ${formatBytes(state.files.find(f=>f.id===id).processedBlob.size)}`;
+        statusArea.classList.remove('hidden');
+        
+        // Add download button
+        const btnContainer = el.querySelector('.flex.flex-col.gap-2');
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'w-8 h-8 rounded-full bg-cy-primary text-black hover:bg-white transition-all flex items-center justify-center animate-bounce';
+        dlBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+        dlBtn.onclick = () => saveAs(state.files.find(f=>f.id===id).processedBlob, `resized_${state.files.find(f=>f.id===id).originalFile.name}`);
+        btnContainer.appendChild(dlBtn);
+    }
+
+    function updateItemError(id) {
+        const el = document.getElementById(`item-${id}`);
+        if(!el) return;
+        const statusArea = el.querySelector('.status-area');
+        statusArea.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Error`;
+        statusArea.classList.remove('hidden');
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    }
+
+    function setPresetScale(val) {
+        document.getElementById('scale-input').value = val;
+        state.settings.scale = val;
+        document.getElementById('scale-val').innerText = val + '%';
+    }
+
+    function toggleFilter(filterName) {
+        state.settings.filters[filterName] = !state.settings.filters[filterName];
+        // Visual feedback on button
+        const btns = document.querySelectorAll('.filter-btn');
+        btns.forEach(btn => {
+            if(btn.getAttribute('onclick').includes(filterName)) {
+                if(state.settings.filters[filterName]) {
+                    btn.classList.add('bg-cy-primary', 'text-black', 'border-cy-primary');
+                    btn.classList.remove('bg-gray-800/50', 'text-gray-400', 'border-gray-700');
+                } else {
+                    btn.classList.remove('bg-cy-primary', 'text-black', 'border-cy-primary');
+                    btn.classList.add('bg-gray-800/50', 'text-gray-400', 'border-gray-700');
+                }
             }
+        });
+    }
 
-            // Update Sun Shader
-            if(bodiesMap['sun']) {
-                bodiesMap['sun'].mesh.material.uniforms.time.value = STATE.time;
-            }
+    function rotateImage(deg) {
+        state.settings.rotation = (state.settings.rotation + deg) % 360;
+    }
 
-            // Update Labels
-            updateLabels();
+    // --- Advanced Features ---
 
-            // Update Stats
-            const date = new Date();
-            date.setDate(date.getDate() + STATE.time);
-            document.getElementById('date-display').innerText = date.toISOString().split('T')[0];
-            document.getElementById('zoom-display').innerText = (camera.position.distanceTo(new THREE.Vector3(0,0,0)) / CONFIG.au).toFixed(2) + " AU";
-            
-            // Camera follow
-            if(STATE.focused && bodiesMap[STATE.focused]) {
-                const target = new THREE.Vector3();
-                bodiesMap[STATE.focused].mesh.getWorldPosition(target);
-                controls.target.lerp(target, 0.1);
-            }
+    function optimizeForWeb() {
+        // Heuristic for "Under 100KB"
+        // Set quality to 70, scale to 80% if large, format to WebP
+        state.settings.quality = 70;
+        document.getElementById('quality-input').value = 70;
+        document.getElementById('quality-val').innerText = '70%';
+        
+        state.settings.format = 'image/webp';
+        document.getElementById('format-select').value = 'image/webp';
 
-            controls.update();
-            composer.render();
-            
-            // Simulate Loading Bar for effect
-            if(Math.random() > 0.9) {
-                const w = Math.random() * 100;
-                // document.getElementById('bar').style.width = w + '%'; // Only for init
-            }
+        if(state.settings.mode === 'percentage' && state.settings.scale > 80) {
+            setPresetScale(80);
         }
 
-        function updateLabels() {
-            const tempV = new THREE.Vector3();
-            for (const key in labels) {
-                const item = labels[key];
-                item.obj.getWorldPosition(tempV);
-                tempV.project(camera);
-                
-                const x = (tempV.x * .5 + .5) * window.innerWidth;
-                const y = (tempV.y * -.5 + .5) * window.innerHeight;
-                
-                // Visibility check
-                if (tempV.z > 1 || Math.abs(tempV.x) > 1.1 || Math.abs(tempV.y) > 1.1) {
-                    item.div.style.display = 'none';
-                } else {
-                    item.div.style.display = 'block';
-                    item.div.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-                    // Fade based on distance
-                    const dist = camera.position.distanceTo(item.obj.position);
-                    const opacity = Math.max(0.2, 1 - dist / 5000);
-                    item.div.style.opacity = opacity;
+        showToast('Optimization', 'Settings adjusted for Web (<100KB target).');
+    }
+
+    function applyToAll() {
+        // Logic is already global, but this could be used to sync individual overrides if we had them.
+        // For now, it serves as a confirmation/visual cue.
+        showToast('Applied', 'Settings applied to all images.');
+    }
+
+    // --- Download & Zip ---
+
+    function downloadZip() {
+        const zip = new JSZip();
+        let count = 0;
+
+        state.files.forEach(file => {
+            if(file.processedBlob) {
+                const ext = file.processedBlob.type.split('/')[1];
+                zip.file(`resized_${file.originalFile.name.split('.')[0]}.${ext}`, file.processedBlob);
+                count++;
+            }
+        });
+
+        if(count === 0) {
+            showToast('Error', 'No processed images to download.');
+            return;
+        }
+
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            saveAs(content, "cy_resizer_pro_images.zip");
+        });
+    }
+
+    // --- Preview Modal ---
+
+    function previewSingle(id) {
+        const file = state.files.find(f => f.id === id);
+        if(!file) return;
+
+        // If not processed yet, show original
+        const src = file.processedUrl || file.previewUrl;
+        const meta = file.processedMeta || file.originalMeta;
+
+        previewImg.src = src;
+        previewInfo.innerText = `${meta.width} x ${meta.height} • ${formatBytes(meta.size)}`;
+        
+        // Setup download button
+        const dlBtn = document.getElementById('preview-download-btn');
+        if(file.processedBlob) {
+            dlBtn.style.display = 'block';
+            dlBtn.onclick = () => saveAs(file.processedBlob, `resized_${file.originalFile.name}`);
+        } else {
+            dlBtn.style.display = 'none';
+        }
+
+        previewModal.classList.remove('hidden');
+    }
+
+    function closePreview() {
+        previewModal.classList.add('hidden');
+        previewImg.src = '';
+    }
+
+    // --- Toast System ---
+    function showToast(title, msg) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-title').innerText = title;
+        document.getElementById('toast-msg').innerText = msg;
+        
+        toast.classList.remove('translate-y-24', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('translate-y-24', 'opacity-0');
+        }, 3000);
+    }
+
+    // --- Particle Background Animation ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.size = Math.random() * 2;
+            this.color = Math.random() > 0.5 ? '#00f2ea' : '#7000ff';
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = 0.5;
+            ctx.fill();
+        }
+    }
+
+    function initParticles() {
+        particles = [];
+        for(let i=0; i<50; i++) particles.push(new Particle());
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        
+        // Draw connections
+        ctx.strokeStyle = '#00f2ea';
+        ctx.lineWidth = 0.5;
+        for(let i=0; i<particles.length; i++) {
+            for(let j=i+1; j<particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 150) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.globalAlpha = 1 - (dist/150);
+                    ctx.stroke();
                 }
             }
         }
+        requestAnimationFrame(animateParticles);
+    }
 
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        }
+    initParticles();
+    animateParticles();
 
-        // Start
-        init();
-
-    </script>
+</script>
 </body>
 </html>
